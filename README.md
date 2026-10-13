@@ -62,7 +62,7 @@ docker compose up -d
 ```
 
 Full NAS setup (volumes, `PUID`/`PGID`, mounts): **[DOCKER.md](./DOCKER.md)**.
-RW2 processing modes and native image dependencies: **[Panasonic RW2 support](./docs/raw-image-support.md)**.
+RW2 RAW support: [processing modes and cache](./docs/raw-image-support.md).
 
 ---
 

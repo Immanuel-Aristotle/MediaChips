@@ -60,7 +60,8 @@ RUN rm -f /etc/apt/sources.list.d/debian.sources && \
 COPY --from=raw-native /usr/local/ /usr/local/
 ENV LD_LIBRARY_PATH=/usr/local/lib \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig \
-    SHARP_FORCE_GLOBAL_LIBVIPS=true
+    SHARP_FORCE_GLOBAL_LIBVIPS=true \
+    NODE_OPTIONS=--max-old-space-size=4096
 RUN ldconfig /usr/local/lib
 
 WORKDIR /app
@@ -101,7 +102,7 @@ RUN rm -f /etc/apt/sources.list.d/debian.sources && \
     apt-get update && apt-get install --no-install-recommends -y \
     ca-certificates ffmpeg gosu libexpat1 libfontconfig1 libfreetype6 libglib2.0-0 \
     libheif1 libjpeg62-turbo liblcms2-2 libopenjp2-7 libpng16-16 librsvg2-2 \
-    libtiff6 libwebp7 libwebpdemux2 libwebpmux3 libxml2 libzstd1 passwd perl tini && \
+    libtiff6 libwebp7 libwebpdemux2 libwebpmux3 libxml2 libzstd1 passwd perl tini wget && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=raw-native /usr/local/ /usr/local/

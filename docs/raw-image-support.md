@@ -9,16 +9,22 @@ entry point. This page does not describe image publication or NAS deployment.
 Set `MEDIACHIPS_RAW_MODE` to choose how MediaChips creates browser previews.
 The default is `embedded`.
 
-| Value | Input used for the preview | Use |
-| --- | --- | --- |
-| `embedded` | The first available JPEG in this order: `JpgFromRaw2`, `JpgFromRaw`, `PreviewImage` | Uses the camera-rendered preview. |
-| `develop` | RAW sensor data decoded by Sharp through the system libvips RAW loader | Develops pixels using the installed LibRaw decoder. |
+### `embedded`
+
+Uses the first available JPEG preview in this order:
+`JpgFromRaw2`, `JpgFromRaw`, `PreviewImage`. This uses the camera-rendered
+preview.
+
+### `develop`
+
+Decodes RAW sensor data through the system libvips RAW loader and installed
+LibRaw decoder.
 
 The value is case-sensitive. Any value other than `embedded` or `develop`
 raises a configuration error. A selected mode does not switch to the other
 mode after an error. In embedded mode, a missing tag is reported separately
-from an extraction error. In develop mode, Sharp/libvips decode errors are
-returned with their cause.
+from an extraction error. In develop mode, Sharp/libvips decode errors include
+the underlying decoder message.
 
 The `embedded` mode checks `JpgFromRaw2` before the smaller JPEG tags. The
 current Panasonic DC-S5M2 samples contain both `JpgFromRaw2` and `JpgFromRaw`.
@@ -42,8 +48,8 @@ Generated thumbnails and cache manifests live under the configured MediaChips
 data directory:
 
 ```text
-/data/media/images/thumbs/<media-id>.jpg
-/data/media/images/thumbs/<media-id>.raw.json
+/data/app_storage/<database-id>/media/images/thumbs/<media-id>.jpg
+/data/app_storage/<database-id>/media/images/thumbs/<media-id>.raw.json
 ```
 
 The manifest records the source SHA-256, file size, modification time,
@@ -64,14 +70,17 @@ The Dockerfile pins the Node base image by its linux/amd64 manifest digest and
 uses a dated Debian package snapshot. The native RAW libraries are built from
 fixed source commits:
 
-| Component | Pinned source |
-| --- | --- |
-| Node | `node:22-bookworm-slim`, linux/amd64 manifest `efd0ab5780c2d9ab1f0f869571a00d5edb17793bff4cce4a2792e3eb0ffc7562` |
-| Debian packages | Snapshot `20261006T000000Z` |
-| LibRaw 0.22.2-1 | `e419de08001de28ae6988ecb22df47e52b9c5eaa` |
-| ImageMagick 7.1.2-21 | `c86de049cefb8dd739e16f0e2fdc1ef8d2006d59` |
-| libvips 8.18.7 | `24ad4d042940e6bf99a68871ba886ca8847c9c82` |
-| exiftool-vendored | npm `39.0.1`, recorded in `package-lock.json` |
+The Dockerfile pins these build inputs:
+
+```text
+Node: node:22-bookworm-slim
+Node manifest digest (linux/amd64): efd0ab5780c2d9ab1f0f869571a00d5edb17793bff4cce4a2792e3eb0ffc7562
+Debian snapshot: 20261006T000000Z
+LibRaw 0.22.2-1: e419de08001de28ae6988ecb22df47e52b9c5eaa
+ImageMagick 7.1.2-21: c86de049cefb8dd739e16f0e2fdc1ef8d2006d59
+libvips 8.18.7: 24ad4d042940e6bf99a68871ba886ca8847c9c82
+exiftool-vendored: npm 39.0.1, recorded in package-lock.json
+```
 
 Sharp is rebuilt with `SHARP_FORCE_GLOBAL_LIBVIPS=true`. The build checks that
 Sharp links to libvips and that the final image exposes both the LibRaw loader
