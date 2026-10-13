@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import { renameDuplicateTagNames } from './ensureGlobalUniqueTagNames'
 
-const IMAGE_EXTENSIONS = 'jpg,jpeg,bmp,png,webp,gif,tiff,tif,heic,avif,svg'
+const IMAGE_EXTENSIONS = 'jpg,jpeg,bmp,png,webp,gif,tiff,tif,heic,avif,svg,rw2'
 const LEGACY_IMAGE_EXTENSIONS = 'jpg,jpeg,bmp,png'
 
 function backfillMediaNames(sqlite: Database.Database) {
@@ -36,6 +36,33 @@ function upgradeImageMediaType(sqlite: Database.Database) {
     SET hidden = 0, extensions = ?, updatedAt = CURRENT_TIMESTAMP
     WHERE type = 'image' AND (hidden = 1 OR extensions = ?)
   `).run(IMAGE_EXTENSIONS, LEGACY_IMAGE_EXTENSIONS)
+}
+
+function addRw2ToExistingImageTypes(sqlite: Database.Database) {
+  const flag = 'migration.image_media_type_rw2_v1'
+  const existing = sqlite.prepare(
+    'SELECT 1 AS ok FROM settings WHERE option = ? LIMIT 1',
+  ).get(flag) as {ok: number} | undefined
+  if (existing) return
+
+  const rows = sqlite.prepare(
+    `SELECT id, extensions FROM mediaTypes WHERE lower(type) = 'image'`,
+  ).all() as Array<{id: number; extensions: string | null}>
+
+  const update = sqlite.prepare(`
+    UPDATE mediaTypes SET extensions = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?
+  `)
+  for (const row of rows) {
+    const extensions = String(row.extensions || '').split(',').map((extension) => extension.trim()).filter(Boolean)
+    if (!extensions.some((extension) => extension.toLowerCase() === 'rw2')) {
+      update.run([...extensions, 'rw2'].join(','), row.id)
+    }
+  }
+
+  sqlite.prepare(`
+    INSERT INTO settings (option, value, createdAt, updatedAt)
+    VALUES (?, '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `).run(flag)
 }
 
 function copyVideoMetaAssignmentsToImage(sqlite: Database.Database) {
@@ -150,6 +177,7 @@ function migrateSceneMarksToBookmarkIcons(sqlite: Database.Database) {
 export function runLegacyUpgrades(sqlite: Database.Database) {
   backfillMediaNames(sqlite)
   upgradeImageMediaType(sqlite)
+  addRw2ToExistingImageTypes(sqlite)
   copyVideoMetaAssignmentsToImage(sqlite)
   dedupeDefaultMediaTypes(sqlite)
   hideDefaultMetaChipsOnCards(sqlite)

@@ -8,6 +8,7 @@ import exifr from 'exifr'
 import { Jimp } from 'jimp'
 import {getCenterCropRect, getDisplayDimensions} from './imageGeometry'
 import {writeFileAtomically} from './safeFileReplace'
+import {createRawThumb, createRawViewerPreview, getRawImageMetadata, isRawImagePath} from './rawImageMedia'
 
 const execFileAsync = promisify(execFile)
 
@@ -126,6 +127,10 @@ async function resizeImageToMaxEdge (
   input: string | Buffer,
   maxEdge: number,
 ): Promise<{buffer: Buffer; width: number; height: number} | null> {
+  if (typeof input === 'string' && isRawImagePath(input)) {
+    return createRawViewerPreview(input, maxEdge)
+  }
+
   const sharp = await getSharp()
   return withDecodableImageInput(input, async (source, forceJpeg) => {
     const meta = await sharp(source, SHARP_READ_OPTIONS).rotate().metadata()
@@ -382,6 +387,10 @@ const getImageMetadataFromBuffer = async (buffer: Buffer) => {
 }
 
 const getImageMetadata = async (pathToFile: string) => {
+  if (isRawImagePath(pathToFile)) {
+    return getRawImageMetadata(pathToFile)
+  }
+
   try {
     const { isVirtualZipPath, readZipEntryBuffer } = await import('./zipGallery')
     if (isVirtualZipPath(pathToFile)) {
@@ -452,6 +461,10 @@ const createImageThumbFromBuffer = async (buffer: Buffer, id: string | number, d
 }
 
 const createImageThumb = async (pathToFile: string, id: string | number, dbPath: string) => {
+  if (isRawImagePath(pathToFile)) {
+    return createRawThumb(pathToFile, id, dbPath)
+  }
+
   const { isVirtualZipPath, readZipEntryBuffer } = await import('./zipGallery')
   if (isVirtualZipPath(pathToFile)) {
     const entry = await readZipEntryBuffer(pathToFile)

@@ -7,6 +7,7 @@ import { createMediaRepository } from '../db/repositories/media'
 import { createMediaTypesRepository } from '../db/repositories/mediaTypes'
 import { createImageMetadataRepository } from '../db/repositories/imageMetadata'
 import { upsertClipEmbeddingForMedia } from './mediaClipEmbeddings'
+import {isRawThumbCurrent} from './rawImageMedia'
 
 import {collectJpgStemIds, parsePositiveStemIds} from './videoImagesStatus'
 
@@ -68,7 +69,9 @@ async function generateImageThumb(
   }
 
   if (!force && hasImageThumb(dbPath, item.id)) {
-    return {status: 'skipped', id: item.id, path: imagePath}
+    const rawPath = /\.rw2$/i.test(imagePath)
+    const current = !rawPath || await isRawThumbCurrent(imagePath, String(item.id), dbPath)
+    if (current) return {status: 'skipped', id: item.id, path: imagePath}
   }
 
   try {

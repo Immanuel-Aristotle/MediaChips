@@ -13,16 +13,15 @@ if [ "$(id -u)" = "0" ]; then
   CURRENT_GID="$(id -g nodejs 2>/dev/null || echo "")"
 
   if [ "$CURRENT_GID" != "$PGID" ]; then
-    groupmod -o -g "$PGID" nodejs 2>/dev/null || addgroup -g "$PGID" -S nodejs
+    groupmod -o -g "$PGID" nodejs
   fi
 
   if [ "$CURRENT_UID" != "$PUID" ]; then
-    usermod -o -u "$PUID" -g "$PGID" nodejs 2>/dev/null \
-      || adduser -S -D -H -u "$PUID" -G nodejs nodejs
+    usermod -o -u "$PUID" -g "$PGID" nodejs
   fi
 
-  chown -R nodejs:nodejs "$DATA_DIR" /app/app_storage 2>/dev/null || true
-  exec su-exec nodejs "$@"
+  chown -R nodejs:nodejs "$DATA_DIR" /app/app_storage
+  exec gosu nodejs "$@"
 fi
 
 exec "$@"

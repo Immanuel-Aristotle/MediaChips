@@ -283,7 +283,7 @@
 
         <div v-if="!displaySrc && loadFailed" class="image-viewer__error">
           <v-alert type="error" variant="tonal">
-            {{ t('image.cannot_obtain') }}
+            {{ loadErrorMessage || t('image.cannot_obtain') }}
           </v-alert>
           <v-btn
             v-if="viewer.isFileExists"
@@ -615,6 +615,7 @@ const filmstripRef = ref<HTMLElement | null>(null)
 const displaySrc = ref<string | null>(null)
 const shownKey = ref('empty')
 const loadFailed = ref(false)
+const loadErrorMessage = ref('')
 const chromeVisible = ref(true)
 const chromePinned = ref(false)
 const shortcutsVisible = ref(false)
@@ -990,7 +991,10 @@ const setDisplaySrc = (
   ownsObjectUrl = owned && Boolean(objectUrl)
   displaySrc.value = src
   shownKey.value = nextKey
-  if (src) loadFailed.value = false
+  if (src) {
+    loadFailed.value = false
+    loadErrorMessage.value = ''
+  }
 }
 
 const adoptLoadedSrc = (src: string | null | undefined, token: number): string | null => {
@@ -1122,6 +1126,7 @@ const prefetchNeighbors = () => {
 const loadCurrentImage = async () => {
   const token = ++loadToken
   loadFailed.value = false
+  loadErrorMessage.value = ''
   showingViewerSized.value = false
   originalUpgradeToken += 1
   const transitionKey = currentTransitionKey()
@@ -1249,6 +1254,7 @@ const onStageImageError = () => {
   const transitionKey = currentTransitionKey()
 
   void (async () => {
+    let rawPreviewError = ''
     // Prefer the original file when an intermediate thumb URL 404s.
     if (image?.path) {
       try {
@@ -1267,10 +1273,40 @@ const onStageImageError = () => {
     }
 
     if (token !== loadToken) return
+    try {
+      rawPreviewError = await readRawPreviewError(displaySrc.value || '')
+    } catch (error) {
+      console.error('Unable to read RW2 preview error response:', error)
+    }
+    if (token !== loadToken) return
     clearObjectUrl()
+    loadErrorMessage.value = rawPreviewError
     loadFailed.value = true
     if (image?.id != null) void enqueueImageThumbAndMeta(Number(image.id))
   })()
+}
+
+async function readRawPreviewError(sourceUrl: string): Promise<string> {
+  if (!sourceUrl) return ''
+  const requestUrl = new URL(sourceUrl, window.location.href)
+  const filePath = requestUrl.searchParams.get('url') || ''
+  if (!/\.rw2$/i.test(filePath)) return ''
+
+  const response = await fetch(requestUrl)
+  if (response.ok) return ''
+
+  const payload = await response.json() as {
+    error?: string
+    mode?: string
+    details?: string
+  }
+  if (response.status !== 422 || payload.error !== 'Unable to generate RW2 preview') {
+    return `RW2 preview request failed with HTTP ${response.status}`
+  }
+
+  return [payload.error, payload.mode && `mode ${payload.mode}`, payload.details]
+    .filter(Boolean)
+    .join(': ')
 }
 
 const stopSlideshowTimer = () => {

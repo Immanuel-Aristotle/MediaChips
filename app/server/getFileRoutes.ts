@@ -11,6 +11,7 @@ import { checkFilesExist } from '../../api/services/checkFilesExist'
 import { resolveVideoThumbFilePath } from '../../api/services/videoPreviewThumb'
 import { isVirtualZipPath, readZipEntryBuffer } from '../../api/services/zipGallery'
 import { resizeImageToMaxEdge } from '../../api/services/imageMedia'
+import {isRawImagePath, rawProcessingMode} from '../../api/services/rawImageMedia'
 
 const FILE_MIME_TYPES = {
   '.jpg': 'image/jpeg',
@@ -23,6 +24,7 @@ const FILE_MIME_TYPES = {
   '.tif': 'image/tiff',
   '.tiff': 'image/tiff',
   '.heic': 'image/heic',
+  '.rw2': 'application/octet-stream',
   '.avif': 'image/avif',
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
@@ -33,6 +35,7 @@ const FILE_MIME_TYPES = {
 
 const VIEWER_RESIZE_EXTS = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.avif', '.heic', '.heif', '.gif',
+  '.rw2',
 ])
 
 function getFileRequestPath(req: ApiRequest): string | null {
@@ -157,8 +160,11 @@ export function registerGetFileRoutes({
       const contentType = FILE_MIME_TYPES[ext as keyof typeof FILE_MIME_TYPES] || 'application/octet-stream'
       const stats = fs.statSync(resolvedPath)
       const maxEdge = parseMaxEdge(req)
-      const etag = maxEdge && VIEWER_RESIZE_EXTS.has(ext)
-        ? `W/"v${maxEdge}-${stats.size}-${Math.trunc(stats.mtimeMs)}"`
+      const isRaw = isRawImagePath(resolvedPath)
+      const etag = maxEdge && isRaw
+        ? `W/"rw2-v1-${rawProcessingMode}-${maxEdge}-${stats.size}-${Math.trunc(stats.mtimeMs)}"`
+        : maxEdge && VIEWER_RESIZE_EXTS.has(ext)
+          ? `W/"v${maxEdge}-${stats.size}-${Math.trunc(stats.mtimeMs)}"`
         : `W/"${stats.size}-${Math.trunc(stats.mtimeMs)}"`
 
       // Media thumbs/grids can be overwritten by scraped posters (TPDB etc.),
@@ -187,7 +193,7 @@ export function registerGetFileRoutes({
         }
       }
 
-      if (headOnly) {
+      if (headOnly && !(isRaw && maxEdge)) {
         res.setHeader('Content-Type', contentType)
         res.setHeader('Cache-Control', cacheControl)
         res.setHeader('Last-Modified', stats.mtime.toUTCString())
@@ -205,9 +211,19 @@ export function registerGetFileRoutes({
             res.setHeader('ETag', etag)
             res.setHeader('Content-Length', resized.buffer.length)
             res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+            if (headOnly) return res.status(200).end()
             return res.status(200).end(resized.buffer)
           }
         } catch (error) {
+          if (isRaw) {
+            const details = error instanceof Error ? error.message : String(error)
+            console.error(`RW2 viewer preview failed (${rawProcessingMode}):`, details)
+            return res.status(422).json({
+              error: 'Unable to generate RW2 preview',
+              mode: rawProcessingMode,
+              details,
+            })
+          }
           console.error('Viewer resize failed, serving original file:', error)
         }
       }

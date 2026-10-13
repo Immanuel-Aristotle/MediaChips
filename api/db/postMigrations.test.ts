@@ -186,6 +186,35 @@ describe('postMigrations', () => {
     }
   })
 
+  it('adds rw2 to existing image extensions without discarding custom extensions', async () => {
+    const dbPath = createTempDbPath()
+    await bootstrapDatabase(dbPath)
+
+    const sqlite = new Database(dbPath)
+    try {
+      sqlite.prepare(`
+        UPDATE mediaTypes SET extensions = 'jpg,png,custom-image' WHERE lower(type) = 'image'
+      `).run()
+      sqlite.prepare(`DELETE FROM settings WHERE option = 'migration.image_media_type_rw2_v1'`).run()
+    } finally {
+      sqlite.close()
+    }
+
+    runPostMigrations(dbPath)
+    runPostMigrations(dbPath)
+
+    const migrated = new Database(dbPath)
+    try {
+      const imageTypes = migrated.prepare(`
+        SELECT extensions FROM mediaTypes WHERE lower(type) = 'image'
+      `).all() as Array<{extensions: string}>
+      expect(imageTypes).toHaveLength(1)
+      expect(imageTypes[0].extensions.split(',')).toEqual(['jpg', 'png', 'custom-image', 'rw2'])
+    } finally {
+      migrated.close()
+    }
+  })
+
   it('backfills starter tags when Tags category exists but is empty', async () => {
     const dbPath = createTempDbPath()
     await bootstrapDatabase(dbPath)

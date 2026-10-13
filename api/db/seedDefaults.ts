@@ -2,7 +2,7 @@ import type Database from 'better-sqlite3'
 import { nowIso } from './utils/timestamps'
 import { loadDefaultSettingsList } from '../utils/defaultSettings'
 
-const IMAGE_EXTENSIONS = 'jpg,jpeg,bmp,png,webp,gif,tiff,tif,heic,avif,svg'
+const IMAGE_EXTENSIONS = 'jpg,jpeg,bmp,png,webp,gif,tiff,tif,heic,avif,svg,rw2'
 
 const DEFAULT_MEDIA_TYPES = [
   {
