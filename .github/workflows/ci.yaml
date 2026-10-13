@@ -24,7 +24,10 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: Build SQLite binding for the test runtime
+        run: npm_config_build_from_source=true npm rebuild better-sqlite3
 
       - name: Run tests
         run: npm test
