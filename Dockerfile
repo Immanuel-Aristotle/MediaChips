@@ -15,7 +15,7 @@ RUN rm -f /etc/apt/sources.list.d/debian.sources && \
     autoconf automake build-essential ca-certificates cmake git libexpat1-dev \
     libfontconfig1-dev libfreetype6-dev libglib2.0-dev libheif-dev libjpeg-dev \
     liblcms2-dev libopenjp2-7-dev libpng-dev librsvg2-dev libtiff-dev libwebp-dev \
-    libxml2-dev libzstd-dev meson ninja-build pkg-config perl && \
+    libtool libxml2-dev libzstd-dev meson ninja-build pkg-config perl && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp/raw-native
