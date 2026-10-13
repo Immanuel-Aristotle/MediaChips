@@ -66,11 +66,9 @@ file.
 
 ## Container build dependencies
 
-The Dockerfile pins the Node base image by its linux/amd64 manifest digest and
-uses a dated Debian package snapshot. The native RAW libraries are built from
+The Dockerfile pins the Node base image by its linux/amd64 manifest digest,
+uses a dated Debian package snapshot, and builds the native RAW libraries from
 fixed source commits:
-
-The Dockerfile pins these build inputs:
 
 ```text
 Node: node:22-bookworm-slim
@@ -88,6 +86,11 @@ and ImageMagick's RW2 format. The image includes license files for MediaChips,
 LibRaw, ImageMagick, and libvips under their respective application and
 documentation paths. The ExifTool license remains with its installed npm
 package.
+
+APT uses the snapshot over HTTP because the build runner did not trust the
+snapshot endpoint's TLS certificate chain. APT still verifies Debian's signed
+repository metadata and the package hashes; signature verification is not
+disabled.
 
 The source library versions follow the build approach used in the
 [Immich base image](https://github.com/immich-app/base-images/blob/2692ae751f7760b3b135cb422c3e2ebec8893f8a/server/Dockerfile).

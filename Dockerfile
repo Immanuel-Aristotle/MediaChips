@@ -8,9 +8,9 @@ ENV LD_LIBRARY_PATH=/usr/local/lib \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
 
 RUN rm -f /etc/apt/sources.list.d/debian.sources && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
     apt-get update && apt-get install --no-install-recommends -y \
     autoconf automake build-essential ca-certificates cmake git libexpat1-dev \
     libfontconfig1-dev libfreetype6-dev libglib2.0-dev libheif-dev libjpeg-dev \
@@ -50,9 +50,9 @@ FROM ${NODE_BASE} AS builder
 ARG DEBIAN_SNAPSHOT
 
 RUN rm -f /etc/apt/sources.list.d/debian.sources && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
     apt-get update && apt-get install --no-install-recommends -y \
     build-essential ffmpeg git make pkg-config python3 rsync && \
     rm -rf /var/lib/apt/lists/*
@@ -96,9 +96,9 @@ FROM ${NODE_BASE} AS runner
 ARG DEBIAN_SNAPSHOT
 
 RUN rm -f /etc/apt/sources.list.d/debian.sources && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
-    printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
+    printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s bookworm-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
     apt-get update && apt-get install --no-install-recommends -y \
     ca-certificates ffmpeg gosu libexpat1 libfontconfig1 libfreetype6 libglib2.0-0 \
     libheif1 libjpeg62-turbo liblcms2-2 libopenjp2-7 libpng16-16 librsvg2-2 \
