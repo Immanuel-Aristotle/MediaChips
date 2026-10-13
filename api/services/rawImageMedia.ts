@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import {exiftool, ExifTool, type BinaryField} from 'exiftool-vendored'
-import sharp from 'sharp'
+import sharp, {type Sharp} from 'sharp'
 import {getDisplayDimensions} from './imageGeometry'
 import {writeFileAtomically} from './safeFileReplace'
 
@@ -80,7 +80,7 @@ export async function getRawImageMetadata(filePath: string) {
   try {
     tags = await rawExifTool.read(filePath, {numericTags: ['Orientation']})
   } catch (error) {
-    throw new Error(`Unable to read RW2 metadata for ${filePath}: ${formatCause(error)}`, {cause: error})
+    throw new Error(`Unable to read RW2 metadata for ${filePath}: ${formatCause(error)}`)
   }
 
   const width = Number(tags.ImageWidth)
@@ -99,7 +99,7 @@ async function extractEmbeddedPreview(filePath: string): Promise<Buffer> {
   try {
     tags = await rawExifTool.read(filePath)
   } catch (error) {
-    throw new Error(`Unable to inspect embedded RW2 previews in ${filePath}: ${formatCause(error)}`, {cause: error})
+    throw new Error(`Unable to inspect embedded RW2 previews in ${filePath}: ${formatCause(error)}`)
   }
 
   const tagValues = tags as unknown as Record<string, unknown>
@@ -116,14 +116,14 @@ async function extractEmbeddedPreview(filePath: string): Promise<Buffer> {
       }
       return buffer
     } catch (error) {
-      throw new Error(`RW2 preview tag ${tagName} exists but extraction failed for ${filePath}: ${formatCause(error)}`, {cause: error})
+      throw new Error(`RW2 preview tag ${tagName} exists but extraction failed for ${filePath}: ${formatCause(error)}`)
     }
   }
 
   throw new Error(`RW2 contains no supported embedded JPEG preview: ${filePath}`)
 }
 
-function applyExifOrientationToSharp(pipeline: sharp.Sharp, orientation: number): sharp.Sharp {
+function applyExifOrientationToSharp(pipeline: Sharp, orientation: number): Sharp {
   switch (orientation) {
     case 2:
       return pipeline.flop()
@@ -149,16 +149,14 @@ async function renderRawImage(filePath: string, maxEdge?: number, quality = 85):
     const preview = await extractEmbeddedPreview(filePath)
     const metadata = await sharp(preview, {
       failOn: 'error',
-      timeout: {seconds: RAW_OPERATION_TIMEOUT_SECONDS},
-    }).metadata()
+    }).timeout({seconds: RAW_OPERATION_TIMEOUT_SECONDS}).metadata()
     if (metadata.format !== 'jpeg' || !metadata.width || !metadata.height) {
       throw new Error(`Embedded RW2 preview is not a decodable JPEG: ${filePath}`)
     }
 
     let pipeline = sharp(preview, {
       failOn: 'error',
-      timeout: {seconds: RAW_OPERATION_TIMEOUT_SECONDS},
-    })
+    }).timeout({seconds: RAW_OPERATION_TIMEOUT_SECONDS})
     pipeline = metadata.orientation
       ? pipeline.rotate()
       : applyExifOrientationToSharp(pipeline, (await getRawImageMetadata(filePath)).orientation)
@@ -172,14 +170,13 @@ async function renderRawImage(filePath: string, maxEdge?: number, quality = 85):
     let pipeline = sharp(filePath, {
       failOn: 'error',
       limitInputPixels: false,
-      timeout: {seconds: RAW_OPERATION_TIMEOUT_SECONDS},
-    }).rotate()
+    }).timeout({seconds: RAW_OPERATION_TIMEOUT_SECONDS}).rotate()
     if (maxEdge) {
       pipeline = pipeline.resize({width: maxEdge, height: maxEdge, fit: 'inside', withoutEnlargement: true})
     }
     return await pipeline.jpeg({quality: RAW_DEVELOP_QUALITY, mozjpeg: true}).toBuffer()
   } catch (error) {
-    throw new Error(`RW2 develop mode could not decode pixels through the configured Sharp/libvips pipeline: ${formatCause(error)}`, {cause: error})
+    throw new Error(`RW2 develop mode could not decode pixels through the configured Sharp/libvips pipeline: ${formatCause(error)}`)
   }
 }
 
@@ -227,7 +224,7 @@ export async function isRawThumbCurrent(filePath: string, id: string | number, d
       return Object.entries(current).every(([key, value]) => stored[key] === value)
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
-      throw new Error(`Unable to validate RW2 thumbnail cache ${manifestPath}: ${formatCause(error)}`, {cause: error})
+      throw new Error(`Unable to validate RW2 thumbnail cache ${manifestPath}: ${formatCause(error)}`)
     }
   })
 }
