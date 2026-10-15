@@ -67,7 +67,7 @@ RUN rm -f /etc/apt/sources.list.d/debian.sources && \
     printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s trixie-updates main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
     printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s trixie-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list && \
     apt-get update && apt-get install --no-install-recommends -y \
-    build-essential ffmpeg git make pkg-config python3 rsync && \
+    build-essential git make pkg-config python3 rsync && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=raw-native /usr/local/ /usr/local/
@@ -101,7 +101,7 @@ LABEL org.opencontainers.image.source="https://github.com/Immanuel-Aristotle/Med
 
 RUN node scripts/compile.mjs backend && \
     npx vite build && \
-    ldd node_modules/sharp/build/Release/sharp-linux-x64.node > /tmp/sharp-ldd && \
+    ldd node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64.node > /tmp/sharp-ldd && \
     grep -q 'libvips-cpp' /tmp/sharp-ldd && \
     ! grep -q 'not found' /tmp/sharp-ldd
 
