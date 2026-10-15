@@ -22,26 +22,38 @@ RUN rm -f /etc/apt/sources.list.d/debian.sources && \
 WORKDIR /tmp/raw-native
 
 # Pin the RAW decoder versions used by Immich's server build.
-RUN git clone --filter=blob:none https://github.com/LibRaw/LibRaw.git libraw && \
-    git -C libraw checkout --detach e419de08001de28ae6988ecb22df47e52b9c5eaa && \
+RUN set -eux; \
+    git init -q libraw && \
+    git -C libraw remote add origin https://github.com/LibRaw/LibRaw.git && \
+    git -C libraw fetch --quiet --depth 1 origin e419de08001de28ae6988ecb22df47e52b9c5eaa && \
+    git -C libraw checkout --quiet --detach FETCH_HEAD && \
     cd libraw && autoreconf --install && ./configure --disable-examples && \
-    make -j"$(nproc)" && make install && ldconfig /usr/local/lib
+    make -j"$(nproc)" && make install && ldconfig /usr/local/lib && \
+    mkdir -p /usr/local/share/doc/mediachips-raw/licenses && \
+    cp LICENSE.LGPL /usr/local/share/doc/mediachips-raw/licenses/LibRaw-LICENSE.LGPL && \
+    cd /tmp/raw-native && rm -rf libraw
 
-RUN git clone --filter=blob:none https://github.com/ImageMagick/ImageMagick.git imagemagick && \
-    git -C imagemagick checkout --detach c86de049cefb8dd739e16f0e2fdc1ef8d2006d59 && \
+RUN set -eux; \
+    git init -q imagemagick && \
+    git -C imagemagick remote add origin https://github.com/ImageMagick/ImageMagick.git && \
+    git -C imagemagick fetch --quiet --depth 1 origin c86de049cefb8dd739e16f0e2fdc1ef8d2006d59 && \
+    git -C imagemagick checkout --quiet --detach FETCH_HEAD && \
     cd imagemagick && CPPFLAGS="-DMAGICK_LIBRAW_VERSION_TAIL=202502" ./configure --with-modules && \
-    make -j"$(nproc)" && make install && ldconfig /usr/local/lib
+    make -j"$(nproc)" && make install && ldconfig /usr/local/lib && \
+    cp LICENSE NOTICE /usr/local/share/doc/mediachips-raw/licenses/ && \
+    cd /tmp/raw-native && rm -rf imagemagick
 
-RUN git clone --filter=blob:none https://github.com/libvips/libvips.git libvips && \
-    git -C libvips checkout --detach 24ad4d042940e6bf99a68871ba886ca8847c9c82 && \
+RUN set -eux; \
+    git init -q libvips && \
+    git -C libvips remote add origin https://github.com/libvips/libvips.git && \
+    git -C libvips fetch --quiet --depth 1 origin 24ad4d042940e6bf99a68871ba886ca8847c9c82 && \
+    git -C libvips checkout --quiet --detach FETCH_HEAD && \
     meson setup libvips/build libvips --buildtype=release --libdir=lib \
       -Dintrospection=disabled -Dtiff=disabled -Draw=enabled -Dmagick=enabled \
       -Dmagick-features=load && \
     ninja -C libvips/build install && ldconfig /usr/local/lib && \
-    mkdir -p /usr/local/share/doc/mediachips-raw/licenses && \
-    cp libraw/LICENSE.LGPL /usr/local/share/doc/mediachips-raw/licenses/LibRaw-LICENSE.LGPL && \
-    cp imagemagick/LICENSE imagemagick/NOTICE /usr/local/share/doc/mediachips-raw/licenses/ && \
-    cp libvips/LICENSE /usr/local/share/doc/mediachips-raw/licenses/libvips-LICENSE
+    cp libvips/LICENSE /usr/local/share/doc/mediachips-raw/licenses/libvips-LICENSE && \
+    rm -rf /tmp/raw-native/libvips
 
 RUN magick -list format | grep -E '^[[:space:]]*RW2[[:space:]]' && \
     vips -l foreign | grep -i dcraw && \
